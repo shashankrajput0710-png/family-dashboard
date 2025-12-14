@@ -19,7 +19,6 @@
   </style>
 </head>
 <body>
-  <!-- The iframe ID MUST stay player-frame -->
   <iframe id="player-frame" src="" allowfullscreen></iframe>
 
   <script type="module">
@@ -42,7 +41,7 @@
     const familyId = params.get("familyId");
     const frame = document.getElementById("player-frame");
 
-    if (familyId && frame) {
+    if (familyId) {
       const videoDocRef = doc(db, "families", familyId, "meta", "sharedVideo");
       onSnapshot(videoDocRef, (snap) => {
         const data = snap.data();
