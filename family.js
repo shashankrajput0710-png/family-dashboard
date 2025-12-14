@@ -119,7 +119,7 @@ onAuthStateChanged(auth, async (user) => {
     console.error("Error loading family:", e);
   }
 
-  /* members */
+  /* members list */
   const membersQuery = query(
     collection(db, "familyMembers"),
     where("familyId", "==", familyId)
@@ -130,7 +130,7 @@ onAuthStateChanged(auth, async (user) => {
     renderMembers(items);
   });
 
-  /* chat */
+  /* general chat */
   const generalRef = collection(db, "families", familyId, "generalMessages");
   onSnapshot(query(generalRef), (snap) => {
     const msgs = [];
@@ -244,7 +244,7 @@ onAuthStateChanged(auth, async (user) => {
   /* shared video doc */
   const videoDocRef = doc(db, "families", familyId, "meta", "sharedVideo");
 
-  /* owner saves URL with auto-embed logic */
+  /* owner saves URL with auto-embed */
   if (isOwnerOfFamily && videoLoadBtn && videoUrlInput) {
     videoLoadBtn.onclick = async () => {
       let url = videoUrlInput.value.trim();
@@ -257,26 +257,26 @@ onAuthStateChanged(auth, async (user) => {
         const u = new URL(url);
         const host = u.hostname.replace(/^www\./, "");
 
-        // YouTube normal links: https://www.youtube.com/watch?v=ID
+        // YouTube normal links
         if (host === "youtube.com" && u.searchParams.get("v")) {
           const id = u.searchParams.get("v");
           url = "https://www.youtube.com/embed/" + id;
         }
-        // YouTube short links: https://youtu.be/ID
+        // YouTube short links
         else if (host === "youtu.be") {
           const id = u.pathname.replace("/", "");
           url = "https://www.youtube.com/embed/" + id;
         }
-        // Vimeo: https://vimeo.com/ID
+        // Vimeo
         else if (host === "vimeo.com") {
           const parts = u.pathname.split("/").filter(Boolean);
           if (parts[0]) {
             url = "https://player.vimeo.com/video/" + parts[0];
           }
         }
-        // Other sites stay as-is; iframe will try to load them.[web:703][web:712]
+        // Other URLs stay as-is (iframe will try to load them)[web:703][web:712]
       } catch (e) {
-        // URL parsing failed, keep original string
+        // if parsing fails, keep original string
       }
 
       try {
@@ -359,6 +359,7 @@ function renderMembers(items) {
     left.appendChild(sub);
     row.appendChild(left);
 
+    // Private chat button
     if (currentUser && m.userUid && m.userUid !== currentUser.uid) {
       const chatBtn = document.createElement("button");
       chatBtn.className = "btn btn-secondary";
