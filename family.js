@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import {
   getAuth,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import {
   getFirestore,
@@ -13,7 +13,7 @@ import {
   serverTimestamp,
   getDoc,
   doc,
-  setDoc
+  setDoc,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 /* Firebase config */
@@ -79,7 +79,6 @@ onAuthStateChanged(auth, async (user) => {
   if (!familyId) return;
   currentUser = user;
 
-  /* family doc */
   try {
     const famSnap = await getDoc(doc(db, "families", familyId));
     if (famSnap.exists()) {
@@ -101,7 +100,6 @@ onAuthStateChanged(auth, async (user) => {
     console.error("Error loading family:", e);
   }
 
-  /* members list */
   const membersQuery = query(
     collection(db, "familyMembers"),
     where("familyId", "==", familyId)
@@ -112,7 +110,6 @@ onAuthStateChanged(auth, async (user) => {
     renderMembers(items);
   });
 
-  /* general chat */
   const generalRef = collection(db, "families", familyId, "generalMessages");
   onSnapshot(query(generalRef), (snap) => {
     const msgs = [];
@@ -120,7 +117,6 @@ onAuthStateChanged(auth, async (user) => {
     renderChat(msgs);
   });
 
-  /* typing indicator */
   const typingDocRef = doc(db, "families", familyId, "meta", "typingStatus");
   onSnapshot(typingDocRef, (snap) => {
     if (!snap.exists()) {
@@ -196,13 +192,13 @@ onAuthStateChanged(auth, async (user) => {
     };
   }
 
-  /* tasks */
   const tasksRef = collection(db, "families", familyId, "tasks");
   onSnapshot(tasksRef, (snap) => {
     const tasks = [];
     snap.forEach((d) => tasks.push({ id: d.id, ...d.data() }));
     renderTasks(tasks);
   });
+
   if (taskAddBtn) {
     taskAddBtn.onclick = async () => {
       const text = taskInput.value.trim();
@@ -374,6 +370,3 @@ function renderTasks(items) {
   taskCount.textContent =
     items.length + (items.length === 1 ? " task" : " tasks");
 }
-
-
-
