@@ -18,14 +18,15 @@ import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// 2. Your Firebase config
+// 2. Your Firebase config (FILL WITH REAL VALUES)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyBhxow1Lf7BFBJY5x9tg8m1jXGWXrd3M_Q",
+  authDomain: "famtree-d8ffd.firebaseapp.com",
+  projectId: "famtree-d8ffd",
+  storageBucket: "famtree-d8ffd.firebasestorage.app",
+  messagingSenderId: "607143089368",
+  appId: "1:607143089368:web:5c0c73209c14c141e933ad",
+  measurementId: "G-BPG2NLE1NW",
 };
 
 // 3. Initialize once
@@ -33,7 +34,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// 4. DOM elements (match your IDs)
+// 4. DOM elements (match your HTML IDs)
 const messagesList = document.getElementById("pv-list");
 const input = document.getElementById("pv-input");
 const sendBtn = document.getElementById("pv-send");
@@ -41,7 +42,7 @@ const titleEl = document.getElementById("pv-title");
 const statusEl = document.getElementById("pv-status");
 
 // 5. State
-// TODO: set this from your app when user selects someone
+// IMPORTANT: put a REAL other user's UID here for testing
 let otherUserUid = "TARGET_USER_UID_HERE";
 let conversationId = null;
 let unsubscribeMessages = null;
@@ -71,7 +72,9 @@ function listenToMessages(convId, myUid) {
   const q = query(messagesCol, orderBy("createdAt", "asc"));
 
   unsubscribeMessages = onSnapshot(q, (snapshot) => {
+    console.log("SNAPSHOT SIZE:", snapshot.size);
     messagesList.innerHTML = "";
+
     if (snapshot.empty) {
       const div = document.createElement("div");
       div.className = "sub";
@@ -95,9 +98,11 @@ function listenToMessages(convId, myUid) {
   });
 }
 
-// 7. Send message
+// 7. Send message (with debug log)
 async function sendPrivateMessage() {
   const text = input.value.trim();
+  console.log("SEND CLICK", { text, conversationId });
+
   if (!text || !conversationId) return;
 
   const user = auth.currentUser;
@@ -130,8 +135,10 @@ async function sendPrivateMessage() {
   }
 }
 
-// 8. Auth and startup
+// 8. Auth and startup (with debug log)
 onAuthStateChanged(auth, async (user) => {
+  console.log("AUTH STATE:", user);
+
   if (!user) {
     statusEl.textContent = "Please log in first.";
     return;
@@ -147,6 +154,7 @@ onAuthStateChanged(auth, async (user) => {
   titleEl.textContent = "Chat with " + otherUserUid.slice(0, 6) + "...";
 
   conversationId = await getOrCreateConversation(user.uid, otherUserUid);
+  console.log("CONVERSATION ID:", conversationId);
   listenToMessages(conversationId, user.uid);
 });
 
