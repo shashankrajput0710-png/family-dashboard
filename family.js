@@ -31,7 +31,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* DOM */
+/* DOM elements */
 const dashStatus = document.getElementById("dash-status");
 const dashMemberList = document.getElementById("dash-member-list");
 const dashMemberCount = document.getElementById("dash-member-count");
@@ -47,16 +47,6 @@ const taskCount = document.getElementById("task-count");
 const taskInput = document.getElementById("task-input");
 const taskAddBtn = document.getElementById("task-add-btn");
 
-/* video controls */
-const playerStatus = document.getElementById("player-status");
-const ownerVideoControls = document.getElementById("owner-video-controls");
-const videoUrlInput = document.getElementById("video-url-input");
-const videoLoadBtn = document.getElementById("video-load-btn");
-const videoToggleBtn = document.getElementById("video-toggle-btn");
-const videoFullBtn = document.getElementById("video-full-btn");
-const videoFrameWrap = document.getElementById("video-frame-wrap");
-const playerFrame = document.getElementById("player-frame");
-
 /* URL params */
 const params = new URLSearchParams(window.location.search);
 const familyId = params.get("familyId");
@@ -68,7 +58,6 @@ if (!familyId && dashStatus) {
 let familyOwnerUid = null;
 let currentUser = null;
 let typingTimeout = null;
-let isOwnerOfFamily = false;
 
 /* Auth + listeners */
 onAuthStateChanged(auth, async (user) => {
@@ -84,7 +73,6 @@ onAuthStateChanged(auth, async (user) => {
     if (taskList)
       taskList.innerHTML =
         "<div class='empty'>You must be logged in to see tasks.</div>";
-    if (ownerVideoControls) ownerVideoControls.style.display = "none";
     return;
   }
 
@@ -98,7 +86,6 @@ onAuthStateChanged(auth, async (user) => {
       const famData = famSnap.data();
       familyOwnerUid = famData.ownerUid || null;
       const isOwner = familyOwnerUid && user.uid === familyOwnerUid;
-      isOwnerOfFamily = !!isOwner;
 
       if (dashStatus) {
         dashStatus.textContent =
@@ -106,14 +93,6 @@ onAuthStateChanged(auth, async (user) => {
           " — " +
           (isOwner ? "You are the owner" : "Signed in as ") +
           (isOwner ? "" : (user.displayName || user.email || ""));
-      }
-      if (ownerVideoControls) {
-        ownerVideoControls.style.display = isOwner ? "flex" : "none";
-      }
-      if (playerStatus) {
-        playerStatus.textContent = isOwner
-          ? "You can set the video URL for everyone."
-          : "Owner controls which video is shown. You watch & chat.";
       }
     } else if (dashStatus) {
       dashStatus.textContent = "Family not found.";
@@ -133,7 +112,7 @@ onAuthStateChanged(auth, async (user) => {
     renderMembers(items);
   });
 
-  /* chat */
+  /* general chat */
   const generalRef = collection(db, "families", familyId, "generalMessages");
   onSnapshot(query(generalRef), (snap) => {
     const msgs = [];
@@ -241,87 +220,6 @@ onAuthStateChanged(auth, async (user) => {
       } catch (e) {
         alert("Error adding task: " + e.message);
       }
-    };
-  }
-
-  /* shared video doc */
-  const videoDocRef = doc(db, "families", familyId, "meta", "sharedVideo");
-
-  /* owner saves URL with auto-embed */
-  if (isOwnerOfFamily && videoLoadBtn && videoUrlInput) {
-    videoLoadBtn.onclick = async () => {
-      let url = videoUrlInput.value.trim();
-      if (!url) {
-        alert("Paste a URL.");
-        return;
-      }
-
-      try {
-        const u = new URL(url);
-        const host = u.hostname.replace(/^www\./, "");
-
-        // YouTube normal
-        if (host === "youtube.com" && u.searchParams.get("v")) {
-          const id = u.searchParams.get("v");
-          url = "https://www.youtube.com/embed/" + id;
-        }
-        // YouTube short
-        else if (host === "youtu.be") {
-          const id = u.pathname.replace("/", "");
-          url = "https://www.youtube.com/embed/" + id;
-        }
-        // Vimeo
-        else if (host === "vimeo.com") {
-          const parts = u.pathname.split("/").filter(Boolean);
-          if (parts[0]) {
-            url = "https://player.vimeo.com/video/" + parts[0];
-          }
-        }
-        // Other URLs stay as-is; iframe will try to load them.[web:703][web:712]
-      } catch (e) {
-        // keep original on parse error
-      }
-
-      try {
-        await setDoc(
-          videoDocRef,
-          {
-            url,
-            updatedBy: currentUser.uid,
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-      } catch (e) {
-        alert("Error saving video URL: " + e.message);
-      }
-    };
-  }
-
-  /* keep iframe synced with sharedVideo url */
-  onSnapshot(videoDocRef, (snap) => {
-    const data = snap.data();
-    if (!playerFrame) return;
-    playerFrame.src = data && data.url ? data.url : "";
-  });
-
-  /* Open / close small player */
-  if (videoToggleBtn && videoFrameWrap) {
-    videoToggleBtn.onclick = () => {
-      const isOpen = videoFrameWrap.classList.toggle("open");
-      videoToggleBtn.textContent = isOpen ? "Close player" : "Open player";
-    };
-  }
-
-  /* Toggle fullscreen overlay */
-  if (videoFullBtn && videoFrameWrap) {
-    videoFullBtn.onclick = () => {
-      if (!videoFrameWrap.classList.contains("open")) {
-        videoFrameWrap.classList.add("open");
-        if (videoToggleBtn) videoToggleBtn.textContent = "Close player";
-      }
-      const isFull = videoFrameWrap.classList.toggle("fullscreen");
-      videoFullBtn.textContent = isFull ? "Exit fullscreen" : "Fullscreen";
     };
   }
 });
