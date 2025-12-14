@@ -30,7 +30,6 @@ const firebaseConfig = {
 
 // 2. Single initialization (no duplicates)
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
 
 // 3. DOM elements (match your HTML IDs)
@@ -150,3 +149,4 @@ input.addEventListener("keypress", (e) => {
     sendPrivateMessage();
   }
 });
+
