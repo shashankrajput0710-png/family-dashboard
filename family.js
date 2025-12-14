@@ -16,7 +16,7 @@ import {
   setDoc,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-/* 1. Firebase config */
+/* Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyBhxow1Lf7BFBJY5x9tg8m1jXGWXrd3M_Q",
   authDomain: "famtree-d8ffd.firebaseapp.com",
@@ -31,7 +31,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* 2. DOM */
+/* DOM */
 const dashStatus = document.getElementById("dash-status");
 const dashMemberList = document.getElementById("dash-member-list");
 const dashMemberCount = document.getElementById("dash-member-count");
@@ -47,29 +47,27 @@ const taskCount = document.getElementById("task-count");
 const taskInput = document.getElementById("task-input");
 const taskAddBtn = document.getElementById("task-add-btn");
 
-/* shared video */
+/* video controls */
 const playerStatus = document.getElementById("player-status");
 const ownerVideoControls = document.getElementById("owner-video-controls");
 const videoUrlInput = document.getElementById("video-url-input");
 const videoLoadBtn = document.getElementById("video-load-btn");
-const videoToggleBtn = document.getElementById("video-toggle-btn");
-const sharedIframe = document.getElementById("shared-iframe");
-const videoFrameWrap = document.querySelector(".video-frame-wrap");
+const openPlayerBtn = document.getElementById("open-player-btn");
 
-/* 3. URL params */
+/* URL params */
 const params = new URLSearchParams(window.location.search);
 const familyId = params.get("familyId");
 if (!familyId && dashStatus) {
   dashStatus.textContent = "No family selected. Open from main page.";
 }
 
-/* 4. State */
+/* State */
 let familyOwnerUid = null;
 let currentUser = null;
 let typingTimeout = null;
 let isOwnerOfFamily = false;
 
-/* 5. Auth + listeners */
+/* Auth + listeners */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     currentUser = null;
@@ -140,7 +138,7 @@ onAuthStateChanged(auth, async (user) => {
     renderChat(msgs);
   });
 
-  /* typing */
+  /* typing indicator */
   const typingDocRef = doc(db, "families", familyId, "meta", "typingStatus");
   onSnapshot(typingDocRef, (snap) => {
     if (!snap.exists()) {
@@ -243,18 +241,10 @@ onAuthStateChanged(auth, async (user) => {
     };
   }
 
-  /* shared iframe document */
+  /* shared video doc */
   const videoDocRef = doc(db, "families", familyId, "meta", "sharedVideo");
-  onSnapshot(videoDocRef, (snap) => {
-    const data = snap.data();
-    if (!data || !data.url) {
-      sharedIframe.src = "";
-      return;
-    }
-    sharedIframe.src = data.url;
-  });
 
-  /* owner loads URL (with YouTube conversion) */
+  /* owner saves URL with auto-embed logic */
   if (isOwnerOfFamily && videoLoadBtn && videoUrlInput) {
     videoLoadBtn.onclick = async () => {
       let url = videoUrlInput.value.trim();
@@ -263,21 +253,30 @@ onAuthStateChanged(auth, async (user) => {
         return;
       }
 
-      // try to convert YouTube watch / youtu.be → embed
       try {
         const u = new URL(url);
-        if (
-          (u.hostname === "www.youtube.com" || u.hostname === "youtube.com") &&
-          u.searchParams.get("v")
-        ) {
+        const host = u.hostname.replace(/^www\./, "");
+
+        // YouTube normal links: https://www.youtube.com/watch?v=ID
+        if (host === "youtube.com" && u.searchParams.get("v")) {
           const id = u.searchParams.get("v");
           url = "https://www.youtube.com/embed/" + id;
-        } else if (u.hostname === "youtu.be") {
+        }
+        // YouTube short links: https://youtu.be/ID
+        else if (host === "youtu.be") {
           const id = u.pathname.replace("/", "");
           url = "https://www.youtube.com/embed/" + id;
         }
+        // Vimeo: https://vimeo.com/ID
+        else if (host === "vimeo.com") {
+          const parts = u.pathname.split("/").filter(Boolean);
+          if (parts[0]) {
+            url = "https://player.vimeo.com/video/" + parts[0];
+          }
+        }
+        // Other sites stay as-is; iframe will try to load them.[web:703][web:712]
       } catch (e) {
-        // if invalid, keep original; iframe may still work for other sites
+        // URL parsing failed, keep original string
       }
 
       try {
@@ -296,16 +295,18 @@ onAuthStateChanged(auth, async (user) => {
     };
   }
 
-  /* everyone: toggle open / close */
-  if (videoToggleBtn && videoFrameWrap) {
-    videoToggleBtn.onclick = () => {
-      const isOpen = videoFrameWrap.classList.toggle("open");
-      videoToggleBtn.textContent = isOpen ? "Close player" : "Open player";
+  /* open player page in new tab */
+  if (openPlayerBtn) {
+    openPlayerBtn.onclick = () => {
+      if (!familyId) return;
+      const url = `player.html?familyId=${encodeURIComponent(familyId)}`;
+      window.open(url, "_blank");
     };
   }
 });
 
-/* 6. Render helpers */
+/* Render helpers */
+
 function renderMembers(items) {
   if (!dashMemberList || !dashMemberCount) return;
 
