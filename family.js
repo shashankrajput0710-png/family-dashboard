@@ -53,6 +53,10 @@ const ownerVideoControls = document.getElementById("owner-video-controls");
 const videoUrlInput = document.getElementById("video-url-input");
 const videoLoadBtn = document.getElementById("video-load-btn");
 const openPlayerBtn = document.getElementById("open-player-btn");
+const videoFrameWrap = document.getElementById("video-frame-wrap");
+const videoToggleBtn = document.getElementById("video-toggle-btn");
+const videoFullBtn = document.getElementById("video-full-btn");
+const playerFrame = document.getElementById("player-frame");
 
 /* URL params */
 const params = new URLSearchParams(window.location.search);
@@ -295,15 +299,27 @@ onAuthStateChanged(auth, async (user) => {
     };
   }
 
-  /* open player page in new tab */
-  if (openPlayerBtn) {
-    openPlayerBtn.onclick = () => {
-      if (!familyId) return;
-      const url = `player.html?familyId=${encodeURIComponent(familyId)}`;
-      window.open(url, "_blank");
-    };
-  }
-});
+ // Open / close small player
+if (videoToggleBtn && videoFrameWrap) {
+  videoToggleBtn.onclick = () => {
+    const isOpen = videoFrameWrap.classList.toggle("open");
+    videoToggleBtn.textContent = isOpen ? "Close player" : "Open player";
+  };
+}
+
+// Toggle fullscreen overlay
+if (videoFullBtn && videoFrameWrap) {
+  videoFullBtn.onclick = () => {
+    // Ensure it is at least open
+    if (!videoFrameWrap.classList.contains("open")) {
+      videoFrameWrap.classList.add("open");
+      if (videoToggleBtn) videoToggleBtn.textContent = "Close player";
+    }
+    const isFull = videoFrameWrap.classList.toggle("fullscreen");
+    videoFullBtn.textContent = isFull ? "Exit fullscreen" : "Fullscreen";
+  };
+}
+
 
 /* Render helpers */
 
@@ -456,3 +472,4 @@ function renderTasks(items) {
   taskCount.textContent =
     items.length + (items.length === 1 ? " task" : " tasks");
 }
+
