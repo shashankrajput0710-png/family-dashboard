@@ -146,6 +146,7 @@ onAuthStateChanged(auth, async (user) => {
 
   statusEl.textContent = "Connected as " + (user.email || user.uid);
 
+  // These two lines must NOT block you
   if (!otherUserUid || otherUserUid === user.uid) {
     statusEl.textContent += " (set otherUserUid in private.js)";
     return;
@@ -170,3 +171,4 @@ input.addEventListener("keypress", (e) => {
     sendPrivateMessage();
   }
 });
+
