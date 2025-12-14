@@ -1,3 +1,5 @@
+// private.js
+// Load Firebase SDKs from CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore,
@@ -15,7 +17,7 @@ import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// PUT YOUR OWN CONFIG VALUES HERE
+// 1. Firebase config (PUT YOUR VALUES HERE)
 const firebaseConfig = {
   apiKey: "AIzaSyBhxow1Lf7BFBJY5x9tg8m1jXGWXrd3M_Q",
   authDomain: "famtree-d8ffd.firebaseapp.com",
@@ -26,30 +28,28 @@ const firebaseConfig = {
   measurementId: "G-BPG2NLE1NW",
 };
 
+// 2. Single initialization (no duplicates)
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// HTML elements (change IDs if different)
+// 3. DOM elements (match your HTML IDs)
 const messagesList = document.getElementById("private-messages");
 const input = document.getElementById("private-input");
 const sendBtn = document.getElementById("private-send");
 
-// The other user's uid must be known (from list/profile click)
+// Set this from your UI when user clicks on a friend
 let otherUserUid = null;
+
+// Conversation tracking
 let conversationId = null;
 let unsubscribeMessages = null;
 
-// 1. Create or get conversation between two users
+// 4. Create or get conversation between two users
 async function getOrCreateConversation(currentUid, otherUid) {
-  // Conversation id is sorted combo of two uids
   const convId = [currentUid, otherUid].sort().join("_");
   const convRef = doc(db, "conversations", convId);
 
-  // Create conversation doc if it doesn't exist
   await setDoc(
     convRef,
     {
@@ -63,7 +63,7 @@ async function getOrCreateConversation(currentUid, otherUid) {
   return convId;
 }
 
-// 2. Listen to messages in this conversation
+// 5. Listen to messages
 function listenToMessages(convId) {
   if (unsubscribeMessages) unsubscribeMessages();
 
@@ -81,7 +81,7 @@ function listenToMessages(convId) {
   });
 }
 
-// 3. Send a private message
+// 6. Send a private message
 async function sendPrivateMessage() {
   const text = input.value.trim();
   if (!text || !conversationId) return;
@@ -107,7 +107,6 @@ async function sendPrivateMessage() {
       createdAt: serverTimestamp(),
     });
 
-    // update conversation metadata
     await setDoc(
       doc(db, "conversations", conversationId),
       {
@@ -123,22 +122,23 @@ async function sendPrivateMessage() {
   }
 }
 
-// 4. Wire up auth and UI
+// 7. Auth state and startup
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     alert("Please log in first.");
     return;
   }
 
-  // TODO: set this from your user selection UI
-  // Example only:
-  // otherUserUid = "TARGET_USER_UID_HERE";
+  // TODO: set this based on which user is selected in your UI
+  // Example only; replace with real UID from your users list:
+  // otherUserUid = "TARGET_USER_UID";
   if (!otherUserUid) return;
 
   conversationId = await getOrCreateConversation(user.uid, otherUserUid);
   listenToMessages(conversationId);
 });
 
+// 8. UI events
 sendBtn.addEventListener("click", (e) => {
   e.preventDefault();
   sendPrivateMessage();
@@ -150,4 +150,3 @@ input.addEventListener("keypress", (e) => {
     sendPrivateMessage();
   }
 });
-
