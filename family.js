@@ -374,3 +374,4 @@ function renderTasks(items) {
   taskCount.textContent =
     items.length + (items.length === 1 ? " task" : " tasks");
 }
+
