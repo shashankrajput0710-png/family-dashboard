@@ -31,7 +31,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* DOM elements */
+/* DOM */
 const dashStatus = document.getElementById("dash-status");
 const dashMemberList = document.getElementById("dash-member-list");
 const dashMemberCount = document.getElementById("dash-member-count");
@@ -47,7 +47,7 @@ const taskCount = document.getElementById("task-count");
 const taskInput = document.getElementById("task-input");
 const taskAddBtn = document.getElementById("task-add-btn");
 
-/* URL params */
+/* URL param */
 const params = new URLSearchParams(window.location.search);
 const familyId = params.get("familyId");
 if (!familyId && dashStatus) {
@@ -59,7 +59,7 @@ let familyOwnerUid = null;
 let currentUser = null;
 let typingTimeout = null;
 
-/* Auth + listeners */
+/* Auth */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     currentUser = null;
@@ -101,7 +101,7 @@ onAuthStateChanged(auth, async (user) => {
     console.error("Error loading family:", e);
   }
 
-  /* members */
+  /* members list */
   const membersQuery = query(
     collection(db, "familyMembers"),
     where("familyId", "==", familyId)
@@ -224,7 +224,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-/* Render helpers */
+/* Renders */
 
 function renderMembers(items) {
   if (!dashMemberList || !dashMemberCount) return;
