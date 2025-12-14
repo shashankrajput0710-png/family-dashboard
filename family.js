@@ -24,7 +24,7 @@ const firebaseConfig = {
   storageBucket: "famtree-d8ffd.firebasestorage.app",
   messagingSenderId: "607143089368",
   appId: "1:607143089368:web:5c0c73209c14c141e933ad",
-  measurementId: "G-BPG2NLE1NW",
+  measurementId: "G-BPG2NLE1NW,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -52,10 +52,9 @@ const playerStatus = document.getElementById("player-status");
 const ownerVideoControls = document.getElementById("owner-video-controls");
 const videoUrlInput = document.getElementById("video-url-input");
 const videoLoadBtn = document.getElementById("video-load-btn");
-const openPlayerBtn = document.getElementById("open-player-btn");
-const videoFrameWrap = document.getElementById("video-frame-wrap");
 const videoToggleBtn = document.getElementById("video-toggle-btn");
 const videoFullBtn = document.getElementById("video-full-btn");
+const videoFrameWrap = document.getElementById("video-frame-wrap");
 const playerFrame = document.getElementById("player-frame");
 
 /* URL params */
@@ -123,7 +122,7 @@ onAuthStateChanged(auth, async (user) => {
     console.error("Error loading family:", e);
   }
 
-  /* members list */
+  /* members */
   const membersQuery = query(
     collection(db, "familyMembers"),
     where("familyId", "==", familyId)
@@ -134,7 +133,7 @@ onAuthStateChanged(auth, async (user) => {
     renderMembers(items);
   });
 
-  /* general chat */
+  /* chat */
   const generalRef = collection(db, "families", familyId, "generalMessages");
   onSnapshot(query(generalRef), (snap) => {
     const msgs = [];
@@ -261,12 +260,12 @@ onAuthStateChanged(auth, async (user) => {
         const u = new URL(url);
         const host = u.hostname.replace(/^www\./, "");
 
-        // YouTube normal links
+        // YouTube normal
         if (host === "youtube.com" && u.searchParams.get("v")) {
           const id = u.searchParams.get("v");
           url = "https://www.youtube.com/embed/" + id;
         }
-        // YouTube short links
+        // YouTube short
         else if (host === "youtu.be") {
           const id = u.pathname.replace("/", "");
           url = "https://www.youtube.com/embed/" + id;
@@ -278,9 +277,9 @@ onAuthStateChanged(auth, async (user) => {
             url = "https://player.vimeo.com/video/" + parts[0];
           }
         }
-        // Other URLs stay as-is (iframe will try to load them)[web:703][web:712]
+        // Other URLs stay as-is; iframe will try to load them.[web:703][web:712]
       } catch (e) {
-        // if parsing fails, keep original string
+        // keep original on parse error
       }
 
       try {
@@ -299,27 +298,33 @@ onAuthStateChanged(auth, async (user) => {
     };
   }
 
- // Open / close small player
-if (videoToggleBtn && videoFrameWrap) {
-  videoToggleBtn.onclick = () => {
-    const isOpen = videoFrameWrap.classList.toggle("open");
-    videoToggleBtn.textContent = isOpen ? "Close player" : "Open player";
-  };
-}
+  /* keep iframe synced with sharedVideo url */
+  onSnapshot(videoDocRef, (snap) => {
+    const data = snap.data();
+    if (!playerFrame) return;
+    playerFrame.src = data && data.url ? data.url : "";
+  });
 
-// Toggle fullscreen overlay
-if (videoFullBtn && videoFrameWrap) {
-  videoFullBtn.onclick = () => {
-    // Ensure it is at least open
-    if (!videoFrameWrap.classList.contains("open")) {
-      videoFrameWrap.classList.add("open");
-      if (videoToggleBtn) videoToggleBtn.textContent = "Close player";
-    }
-    const isFull = videoFrameWrap.classList.toggle("fullscreen");
-    videoFullBtn.textContent = isFull ? "Exit fullscreen" : "Fullscreen";
-  };
-}
+  /* Open / close small player */
+  if (videoToggleBtn && videoFrameWrap) {
+    videoToggleBtn.onclick = () => {
+      const isOpen = videoFrameWrap.classList.toggle("open");
+      videoToggleBtn.textContent = isOpen ? "Close player" : "Open player";
+    };
+  }
 
+  /* Toggle fullscreen overlay */
+  if (videoFullBtn && videoFrameWrap) {
+    videoFullBtn.onclick = () => {
+      if (!videoFrameWrap.classList.contains("open")) {
+        videoFrameWrap.classList.add("open");
+        if (videoToggleBtn) videoToggleBtn.textContent = "Close player";
+      }
+      const isFull = videoFrameWrap.classList.toggle("fullscreen");
+      videoFullBtn.textContent = isFull ? "Exit fullscreen" : "Fullscreen";
+    };
+  }
+});
 
 /* Render helpers */
 
@@ -375,7 +380,6 @@ function renderMembers(items) {
     left.appendChild(sub);
     row.appendChild(left);
 
-    // Private chat button
     if (currentUser && m.userUid && m.userUid !== currentUser.uid) {
       const chatBtn = document.createElement("button");
       chatBtn.className = "btn btn-secondary";
@@ -472,4 +476,3 @@ function renderTasks(items) {
   taskCount.textContent =
     items.length + (items.length === 1 ? " task" : " tasks");
 }
-
