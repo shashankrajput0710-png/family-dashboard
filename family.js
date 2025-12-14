@@ -24,7 +24,7 @@ const firebaseConfig = {
   storageBucket: "famtree-d8ffd.firebasestorage.app",
   messagingSenderId: "607143089368",
   appId: "1:607143089368:web:5c0c73209c14c141e933ad",
-  measurementId: "G-BPG2NLE1NW,
+  measurementId: "G-BPG2NLE1NW",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -374,4 +374,5 @@ function renderTasks(items) {
   taskCount.textContent =
     items.length + (items.length === 1 ? " task" : " tasks");
 }
+
 
