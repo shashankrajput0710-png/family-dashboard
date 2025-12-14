@@ -1,23 +1,20 @@
-// private.js
-// Load Firebase SDKs from CDN
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  doc,
-  addDoc,
-  setDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  serverTimestamp,
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import {
   getAuth,
   onAuthStateChanged,
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  addDoc,
+  serverTimestamp,
+  doc,
+  onSnapshot,
+  setDoc,
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// 1. Firebase config (PUT YOUR VALUES HERE)
+/* ----- 1. Firebase config (same as other files) ----- */
 const firebaseConfig = {
   apiKey: "AIzaSyBhxow1Lf7BFBJY5x9tg8m1jXGWXrd3M_Q",
   authDomain: "famtree-d8ffd.firebaseapp.com",
@@ -28,125 +25,126 @@ const firebaseConfig = {
   measurementId: "G-BPG2NLE1NW",
 };
 
-// 2. Single initialization (no duplicates)
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-// 3. DOM elements (match your HTML IDs)
-const messagesList = document.getElementById("private-messages");
-const input = document.getElementById("private-input");
-const sendBtn = document.getElementById("private-send");
+/* ----- 2. DOM & URL ----- */
+const pvTitle = document.getElementById("pv-title");
+const pvStatus = document.getElementById("pv-status");
+const pvList = document.getElementById("pv-list");
+const pvInput = document.getElementById("pv-input");
+const pvSend = document.getElementById("pv-send");
 
-// Set this from your UI when user clicks on a friend
-let otherUserUid = null;
+const params = new URLSearchParams(window.location.search);
+const withUid = params.get("withUid");
+const withName = decodeURIComponent(params.get("withName") || "Member");
 
-// Conversation tracking
-let conversationId = null;
-let unsubscribeMessages = null;
+pvTitle.textContent = "Private chat with " + withName;
 
-// 4. Create or get conversation between two users
-async function getOrCreateConversation(currentUid, otherUid) {
-  const convId = [currentUid, otherUid].sort().join("_");
-  const convRef = doc(db, "conversations", convId);
+/* ----- 3. Helpers ----- */
+function sortedPair(uid1, uid2) {
+  return [uid1, uid2].sort();
+}
 
+let currentUser = null;
+let msgsRef = null;
+let convRef = null;
+
+/* ----- 4. Auth + conversation ----- */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    pvStatus.textContent = "Please log in from main page first.";
+    pvSend.disabled = true;
+    pvInput.disabled = true;
+    return;
+  }
+  currentUser = user;
+  pvStatus.textContent = "You: " + (user.displayName || user.email || user.uid);
+
+  if (!withUid) {
+    pvStatus.textContent = "Missing chat partner.";
+    return;
+  }
+
+  const [a, b] = sortedPair(user.uid, withUid);
+  const convKey = a + "_" + b;
+
+  convRef = doc(db, "conversations", convKey);
   await setDoc(
     convRef,
     {
-      members: [currentUid, otherUid],
-      lastMessage: "",
-      updatedAt: serverTimestamp(),
+      members: [a, b],
+      createdAt: serverTimestamp(),
     },
     { merge: true }
   );
 
-  return convId;
-}
-
-// 5. Listen to messages
-function listenToMessages(convId) {
-  if (unsubscribeMessages) unsubscribeMessages();
-
-  const messagesCol = collection(db, "conversations", convId, "messages");
-  const q = query(messagesCol, orderBy("createdAt", "asc"));
-
-  unsubscribeMessages = onSnapshot(q, (snapshot) => {
-    messagesList.innerHTML = "";
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const li = document.createElement("li");
-      li.textContent = `${data.senderName || data.senderUid}: ${data.text}`;
-      messagesList.appendChild(li);
+  msgsRef = collection(convRef, "messages");
+  const qMsgs = query(msgsRef);
+  onSnapshot(qMsgs, (snap) => {
+    const msgs = [];
+    snap.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
+    msgs.sort((x, y) => {
+      const tx = x.createdAt?.toMillis?.() || 0;
+      const ty = y.createdAt?.toMillis?.() || 0;
+      return tx - ty;
     });
+    renderMessages(msgs);
   });
-}
 
-// 6. Send a private message
-async function sendPrivateMessage() {
-  const text = input.value.trim();
-  if (!text || !conversationId) return;
+  pvSend.onclick = async () => {
+    const text = pvInput.value.trim();
+    if (!text) return;
+    try {
+      await addDoc(msgsRef, {
+        text,
+        senderUid: user.uid,
+        senderName: user.displayName || user.email || "Me",
+        createdAt: serverTimestamp(),
+      });
+      await setDoc(
+        convRef,
+        { lastMessageAt: serverTimestamp() },
+        { merge: true }
+      );
+      pvInput.value = "";
+    } catch (e) {
+      alert("Error sending message: " + e.message);
+    }
+  };
+});
 
-  const user = auth.currentUser;
-  if (!user) {
-    alert("You must be logged in.");
+/* ----- 5. Render ----- */
+function renderMessages(items) {
+  pvList.innerHTML = "";
+  if (!items.length) {
+    pvList.innerHTML = "<div class='sub'>No messages yet.</div>";
     return;
   }
 
-  try {
-    const messagesCol = collection(
-      db,
-      "conversations",
-      conversationId,
-      "messages"
-    );
+  items.forEach((m) => {
+    const wrap = document.createElement("div");
+    wrap.className = "item";
+    if (currentUser && m.senderUid === currentUser.uid) {
+      wrap.classList.add("item-me");
+    }
 
-    await addDoc(messagesCol, {
-      text,
-      senderUid: user.uid,
-      senderName: user.displayName || "Unknown",
-      createdAt: serverTimestamp(),
-    });
+    const author = document.createElement("div");
+    author.className = "item-author";
+    author.textContent =
+      currentUser && m.senderUid === currentUser.uid
+        ? "You"
+        : m.senderName || "Member";
 
-    await setDoc(
-      doc(db, "conversations", conversationId),
-      {
-        lastMessage: text,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    const text = document.createElement("div");
+    text.className = "item-text";
+    text.textContent = m.text || "";
 
-    input.value = "";
-  } catch (e) {
-    alert("Error sending message: " + e.message);
-  }
+    wrap.appendChild(author);
+    wrap.appendChild(text);
+    pvList.appendChild(wrap);
+  });
+
+  pvList.scrollTop = pvList.scrollHeight;
 }
-
-// 7. Auth state and startup
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    alert("Please log in first.");
-    return;
-  }
-
-  // TODO: set this based on which user is selected in your UI
-  // Example only; replace with real UID from your users list:
-  // otherUserUid = "TARGET_USER_UID";
-  if (!otherUserUid) return;
-
-  conversationId = await getOrCreateConversation(user.uid, otherUserUid);
-  listenToMessages(conversationId);
-});
-
-// 8. UI events
-sendBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  sendPrivateMessage();
-});
-
-input.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    sendPrivateMessage();
-  }
-});
-
