@@ -1,150 +1,164 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+// private.js  (Firebase v9+ modular, used with <script type="module">)
+
+// 1. Firebase imports from CDN
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore,
   collection,
-  query,
-  addDoc,
-  serverTimestamp,
   doc,
-  onSnapshot,
+  addDoc,
   setDoc,
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-/* ----- 1. Firebase config (same as other files) ----- */
+// 2. Your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyBhxow1Lf7BFBJY5x9tg8m1jXGWXrd3M_Q",
-  authDomain: "famtree-d8ffd.firebaseapp.com",
-  projectId: "famtree-d8ffd",
-  storageBucket: "famtree-d8ffd.firebasestorage.app",
-  messagingSenderId: "607143089368",
-  appId: "1:607143089368:web:5c0c73209c14c141e933ad",
-  measurementId: "G-BPG2NLE1NW",
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID",
 };
 
+// 3. Initialize once
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-/* ----- 2. DOM & URL ----- */
-const pvTitle = document.getElementById("pv-title");
-const pvStatus = document.getElementById("pv-status");
-const pvList = document.getElementById("pv-list");
-const pvInput = document.getElementById("pv-input");
-const pvSend = document.getElementById("pv-send");
+// 4. DOM elements (match your IDs)
+const messagesList = document.getElementById("pv-list");
+const input = document.getElementById("pv-input");
+const sendBtn = document.getElementById("pv-send");
+const titleEl = document.getElementById("pv-title");
+const statusEl = document.getElementById("pv-status");
 
-const params = new URLSearchParams(window.location.search);
-const withUid = params.get("withUid");
-const withName = decodeURIComponent(params.get("withName") || "Member");
+// 5. State
+// TODO: set this from your app when user selects someone
+let otherUserUid = "TARGET_USER_UID_HERE";
+let conversationId = null;
+let unsubscribeMessages = null;
 
-pvTitle.textContent = "Private chat with " + withName;
+// 6. Conversation helpers
+async function getOrCreateConversation(currentUid, otherUid) {
+  const convId = [currentUid, otherUid].sort().join("_");
+  const convRef = doc(db, "conversations", convId);
 
-/* ----- 3. Helpers ----- */
-function sortedPair(uid1, uid2) {
-  return [uid1, uid2].sort();
-}
-
-let currentUser = null;
-let msgsRef = null;
-let convRef = null;
-
-/* ----- 4. Auth + conversation ----- */
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    pvStatus.textContent = "Please log in from main page first.";
-    pvSend.disabled = true;
-    pvInput.disabled = true;
-    return;
-  }
-  currentUser = user;
-  pvStatus.textContent = "You: " + (user.displayName || user.email || user.uid);
-
-  if (!withUid) {
-    pvStatus.textContent = "Missing chat partner.";
-    return;
-  }
-
-  const [a, b] = sortedPair(user.uid, withUid);
-  const convKey = a + "_" + b;
-
-  convRef = doc(db, "conversations", convKey);
   await setDoc(
     convRef,
     {
-      members: [a, b],
-      createdAt: serverTimestamp(),
+      members: [currentUid, otherUid],
+      lastMessage: "",
+      updatedAt: serverTimestamp(),
     },
     { merge: true }
   );
 
-  msgsRef = collection(convRef, "messages");
-  const qMsgs = query(msgsRef);
-  onSnapshot(qMsgs, (snap) => {
-    const msgs = [];
-    snap.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
-    msgs.sort((x, y) => {
-      const tx = x.createdAt?.toMillis?.() || 0;
-      const ty = y.createdAt?.toMillis?.() || 0;
-      return tx - ty;
-    });
-    renderMessages(msgs);
-  });
+  return convId;
+}
 
-  pvSend.onclick = async () => {
-    const text = pvInput.value.trim();
-    if (!text) return;
-    try {
-      await addDoc(msgsRef, {
-        text,
-        senderUid: user.uid,
-        senderName: user.displayName || user.email || "Me",
-        createdAt: serverTimestamp(),
-      });
-      await setDoc(
-        convRef,
-        { lastMessageAt: serverTimestamp() },
-        { merge: true }
-      );
-      pvInput.value = "";
-    } catch (e) {
-      alert("Error sending message: " + e.message);
+function listenToMessages(convId, myUid) {
+  if (unsubscribeMessages) unsubscribeMessages();
+
+  const messagesCol = collection(db, "conversations", convId, "messages");
+  const q = query(messagesCol, orderBy("createdAt", "asc"));
+
+  unsubscribeMessages = onSnapshot(q, (snapshot) => {
+    messagesList.innerHTML = "";
+    if (snapshot.empty) {
+      const div = document.createElement("div");
+      div.className = "sub";
+      div.textContent = "No messages yet.";
+      messagesList.appendChild(div);
+      return;
     }
-  };
-});
 
-/* ----- 5. Render ----- */
-function renderMessages(items) {
-  pvList.innerHTML = "";
-  if (!items.length) {
-    pvList.innerHTML = "<div class='sub'>No messages yet.</div>";
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const div = document.createElement("div");
+      div.className = "item" + (data.senderUid === myUid ? " item-me" : "");
+      div.innerHTML = `
+        <div class="item-author">${data.senderUid === myUid ? "You" : (data.senderName || "Friend")}</div>
+        <div class="item-text">${data.text}</div>
+      `;
+      messagesList.appendChild(div);
+    });
+
+    messagesList.scrollTop = messagesList.scrollHeight;
+  });
+}
+
+// 7. Send message
+async function sendPrivateMessage() {
+  const text = input.value.trim();
+  if (!text || !conversationId) return;
+
+  const user = auth.currentUser;
+  if (!user) {
+    alert("You must be logged in.");
     return;
   }
 
-  items.forEach((m) => {
-    const wrap = document.createElement("div");
-    wrap.className = "item";
-    if (currentUser && m.senderUid === currentUser.uid) {
-      wrap.classList.add("item-me");
-    }
+  try {
+    const messagesCol = collection(db, "conversations", conversationId, "messages");
+    await addDoc(messagesCol, {
+      text,
+      senderUid: user.uid,
+      senderName: user.displayName || "Unknown",
+      createdAt: serverTimestamp(),
+    });
 
-    const author = document.createElement("div");
-    author.className = "item-author";
-    author.textContent =
-      currentUser && m.senderUid === currentUser.uid
-        ? "You"
-        : m.senderName || "Member";
+    await setDoc(
+      doc(db, "conversations", conversationId),
+      {
+        lastMessage: text,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-    const text = document.createElement("div");
-    text.className = "item-text";
-    text.textContent = m.text || "";
-
-    wrap.appendChild(author);
-    wrap.appendChild(text);
-    pvList.appendChild(wrap);
-  });
-
-  pvList.scrollTop = pvList.scrollHeight;
+    input.value = "";
+  } catch (e) {
+    alert("Error sending message: " + e.message);
+  }
 }
+
+// 8. Auth and startup
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    statusEl.textContent = "Please log in first.";
+    return;
+  }
+
+  statusEl.textContent = "Connected as " + (user.email || user.uid);
+
+  if (!otherUserUid || otherUserUid === user.uid) {
+    statusEl.textContent += " (set otherUserUid in private.js)";
+    return;
+  }
+
+  titleEl.textContent = "Chat with " + otherUserUid.slice(0, 6) + "...";
+
+  conversationId = await getOrCreateConversation(user.uid, otherUserUid);
+  listenToMessages(conversationId, user.uid);
+});
+
+// 9. UI events
+sendBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  sendPrivateMessage();
+});
+
+input.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendPrivateMessage();
+  }
+});
