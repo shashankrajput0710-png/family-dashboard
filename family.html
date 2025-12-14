@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Family Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+    .page {
+      width: 100%;
+      max-width: 1200px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+    }
+    .page-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+    .page-sub {
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      gap: 6px;
+    }
+    .btn-secondary {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+    }
+    .btn-secondary:hover { background: #020617; }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    /* Top: video area */
+    .video-area {
+      flex: 3;
+      padding: 0 16px 8px;
+      box-sizing: border-box;
+    }
+    .video-card {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .video-header {
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #111827;
+      gap: 8px;
+    }
+    .video-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      min-width: 0;
+    }
+    .video-controls input {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.85rem;
+      box-sizing: border-box;
+    }
+    .video-frame-wrap {
+      flex: 1;
+      background: #020617;
+      display: none;          /* start closed */
+    }
+    .video-frame-wrap.open {
+      display: block;         /* opened by button */
+    }
+    .video-frame-wrap iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Bottom area */
+    .bottom-area {
+      flex: 2;
+      padding: 0 16px 16px;
+      box-sizing: border-box;
+      display: grid;
+      grid-template-columns: 1.1fr 1.4fr;
+      gap: 12px;
+      min-height: 0;
+    }
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .card-count {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #111827;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      gap: 4px;
+    }
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .list {
+      flex: 1;
+      border-radius: 10px;
+      border: 1px solid #111827;
+      background: #020617;
+      padding: 6px;
+      overflow-y: auto;
+    }
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 8px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      border: 1px solid transparent;
+    }
+    .list-item:nth-child(2n) { background: #020617; }
+    .list-item:hover {
+      border-color: #1d4ed8;
+      background: #020617;
+    }
+    .list-label { font-weight: 500; }
+    .list-sub {
+      font-size: 0.78rem;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+    .empty {
+      font-size: 0.82rem;
+      color: #6b7280;
+      padding: 6px 4px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .input-row input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+
+    #typing-indicator {
+      min-height: 18px;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 800px) {
+      .bottom-area {
+        grid-template-columns: 1fr;
+        grid-auto-rows: minmax(0, 1fr);
+      }
+      .video-area { padding: 0 10px 8px; }
+      .bottom-area { padding: 0 10px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Family dashboard</div>
+        <div id="dash-status" class="page-sub">Loading family...</div>
+      </div>
+      <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+        ← Back to home
+      </button>
+    </div>
+
+    <div class="video-area">
+      <div class="video-card">
+        <div class="video-header">
+          <div>
+            <div class="card-title">Watch together</div>
+            <div id="player-status" class="card-count">
+              Only owner can change the video. Everyone can watch.
+            </div>
+          </div>
+          <div id="owner-video-controls" class="video-controls">
+            <button id="video-toggle-btn" class="btn btn-secondary">
+              Open player
+            </button>
+            <input id="video-url-input" type="text"
+                   placeholder="Paste video / YouTube URL (owner only)..." />
+            <button id="video-load-btn" class="btn btn-primary">Load</button>
+          </div>
+        </div>
+        <div class="video-frame-wrap">
+          <iframe id="shared-iframe" src="" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-area">
+      <!-- LEFT: members + tasks -->
+      <div class="column">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Family members</div>
+              <div id="dash-member-count" class="card-count">0 members</div>
+            </div>
+            <div class="pill">
+              <span class="pill-dot"></span>
+              Live
+            </div>
+          </div>
+          <div id="dash-member-list" class="list">
+            <div class="empty">No members yet.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Family tasks</div>
+              <div id="task-count" class="card-count">0 tasks</div>
+            </div>
+          </div>
+          <div id="task-list" class="list">
+            <div class="empty">No tasks yet.</div>
+          </div>
+          <div class="input-row">
+            <input id="task-input" type="text" placeholder="Add a task for family..." />
+            <button id="task-add-btn" class="btn btn-primary">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: chat -->
+      <div class="column">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Family chat</div>
+              <div id="chat-count" class="card-count">0 messages</div>
+            </div>
+          </div>
+          <div id="chat-list" class="list">
+            <div class="empty">No messages yet. Say hi!</div>
+          </div>
+          <div id="typing-indicator"></div>
+          <div class="input-row">
+            <input id="chat-input" type="text" placeholder="Type a message..." />
+            <button id="chat-send-btn" class="btn btn-primary">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="family.js"></script>
+</body>
+</html>
