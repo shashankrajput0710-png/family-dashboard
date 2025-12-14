@@ -1,5 +1,4 @@
-// private.js
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -11,8 +10,25 @@ import {
   orderBy,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { app } from "./firebase.js";   // your initialized app
+import {
+  getAuth,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// PUT YOUR OWN CONFIG VALUES HERE
+const firebaseConfig = {
+  apiKey: "AIzaSyBhxow1Lf7BFBJY5x9tg8m1jXGWXrd3M_Q",
+  authDomain: "famtree-d8ffd.firebaseapp.com",
+  projectId: "famtree-d8ffd",
+  storageBucket: "famtree-d8ffd.firebasestorage.app",
+  messagingSenderId: "607143089368",
+  appId: "1:607143089368:web:5c0c73209c14c141e933ad",
+  measurementId: "G-BPG2NLE1NW",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -134,3 +150,4 @@ input.addEventListener("keypress", (e) => {
     sendPrivateMessage();
   }
 });
+
