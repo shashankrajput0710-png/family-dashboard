@@ -57,85 +57,8 @@
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
 
-    /* Video area with small player + fullscreen overlay */
-    .video-area {
-      flex: 1.4;
-      padding: 0 16px 8px;
-      box-sizing: border-box;
-    }
-    .video-card {
-      width: 100%;
-      height: 100%;
-      border-radius: 12px;
-      border: 1px solid #1f2937;
-      background: #020617;
-      display: flex;
-      flex-direction: column;
-      overflow: visible;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      padding: 10px;
-      gap: 8px;
-      box-sizing: border-box;
-      position: relative;
-    }
-    .video-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
-    .video-controls {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      min-width: 0;
-    }
-    .video-controls input {
-      flex: 1;
-      min-width: 0;
-      padding: 6px 8px;
-      border-radius: 8px;
-      border: 1px solid #374151;
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 0.85rem;
-      box-sizing: border-box;
-    }
-    .page-note { font-size: 0.8rem; color: #9ca3af; }
-
-    .video-frame-wrap {
-      flex: 0 0 180px;   /* small player height */
-      background: #020617;
-      display: none;
-      border-radius: 10px;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-    .video-frame-wrap.open { display: block; }
-
-    .video-frame-wrap.fullscreen {
-      position: fixed;
-      inset: 10px;
-      z-index: 9999;
-      flex: none;
-      margin: 0;
-      border-radius: 12px;
-      box-shadow: 0 0 0 9999px rgba(0,0,0,0.75);
-    }
-    .video-frame-wrap.fullscreen #player-frame {
-      width: 100%;
-      height: 100%;
-    }
-
-    #player-frame {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    /* Bottom area: members + tasks + chat */
     .bottom-area {
-      flex: 2.6;
+      flex: 1;
       padding: 0 16px 16px;
       box-sizing: border-box;
       display: grid;
@@ -239,12 +162,7 @@
         grid-template-columns: 1fr;
         grid-auto-rows: minmax(0, 1fr);
       }
-      .video-area { padding: 0 10px 8px; }
       .bottom-area { padding: 0 10px 10px; }
-      .video-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
     }
   </style>
 </head>
@@ -258,32 +176,6 @@
       <button class="btn btn-secondary" onclick="window.location.href='index.html'">
         ← Back to home
       </button>
-    </div>
-
-    <div class="video-area">
-      <div class="video-card">
-        <div class="video-header">
-          <div>
-            <div class="card-title">Shared player</div>
-            <div id="player-status" class="card-count">
-              Only owner can change the video URL.
-            </div>
-          </div>
-          <div id="owner-video-controls" class="video-controls">
-            <input id="video-url-input" type="text"
-                   placeholder="Paste YouTube, Vimeo or any embeddable URL (owner only)..." />
-            <button id="video-load-btn" class="btn btn-primary">Save URL</button>
-            <button id="video-toggle-btn" class="btn btn-secondary">Open player</button>
-            <button id="video-full-btn" class="btn btn-secondary">Fullscreen</button>
-          </div>
-        </div>
-        <div class="page-note">
-          Player stays small by default. Use Open player to show/hide it and Fullscreen to make it big.
-        </div>
-        <div class="video-frame-wrap" id="video-frame-wrap">
-          <iframe id="player-frame" src="" allowfullscreen></iframe>
-        </div>
-      </div>
     </div>
 
     <div class="bottom-area">
