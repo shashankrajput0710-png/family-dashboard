@@ -296,13 +296,14 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   /* open player page in new tab */
-if (openPlayerBtn) {
-  openPlayerBtn.onclick = () => {
-    if (!familyId) return;
-    const url = `player.html?familyId=${encodeURIComponent(familyId)}`;
-    window.open(url, "_blank");
-  };
-}
+  if (openPlayerBtn) {
+    openPlayerBtn.onclick = () => {
+      if (!familyId) return;
+      const url = `player.html?familyId=${encodeURIComponent(familyId)}`;
+      window.open(url, "_blank");
+    };
+  }
+});
 
 /* Render helpers */
 
@@ -454,4 +455,3 @@ function renderTasks(items) {
   taskCount.textContent =
     items.length + (items.length === 1 ? " task" : " tasks");
 }
-
