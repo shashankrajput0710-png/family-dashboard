@@ -57,7 +57,7 @@
     .btn-primary { background: #2563eb; color: white; }
     .btn-primary:hover { background: #1d4ed8; }
 
-    /* Video area */
+    /* Video area with small player + fullscreen overlay */
     .video-area {
       flex: 1.4;
       padding: 0 16px 8px;
@@ -104,7 +104,7 @@
     .page-note { font-size: 0.8rem; color: #9ca3af; }
 
     .video-frame-wrap {
-      flex: 0 0 180px;     /* small player height */
+      flex: 0 0 180px;   /* small player height */
       background: #020617;
       display: none;
       border-radius: 10px;
@@ -113,7 +113,6 @@
     }
     .video-frame-wrap.open { display: block; }
 
-    /* fullscreen overlay state */
     .video-frame-wrap.fullscreen {
       position: fixed;
       inset: 10px;
@@ -134,7 +133,7 @@
       border: none;
     }
 
-    /* Bottom area */
+    /* Bottom area: members + tasks + chat */
     .bottom-area {
       flex: 2.6;
       padding: 0 16px 16px;
